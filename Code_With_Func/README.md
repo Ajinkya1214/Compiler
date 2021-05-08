@@ -6,3 +6,6 @@ How to compile ?
   
 How to run ?
   ./a.out <strln.prog
+
+Using makefile 
+- Run `make`

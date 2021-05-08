@@ -1,5 +1,5 @@
 %{
-    #include "bison.tab.h"
+    #include "bison2.tab.h"
     #include "table.h"
     #include<stdio.h>
     #include<string.h>
@@ -13,7 +13,10 @@ FUNC         "def "{VAR}
 
 %%
 
-[ ]             {}   
+[ ]             {}  
+"while"         {return WHILE;}
+"for"           {return FOR;}
+"int"           {return INT;}    
 {MAIN}          {return MAIN;}
 {FUNC}          {char* fname= getname(yytext);struct symrec *s= getsym(fname); if(s==0){s=putsym(fname,"FUNC");}yylval.ptr=s;return FUNC;}  /* put a symbol corresponding to the function name*/
 {NUM}           {yylval.num = atoi(yytext); return NUM;}

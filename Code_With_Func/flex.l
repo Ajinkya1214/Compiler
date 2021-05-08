@@ -1,19 +1,9 @@
 %{
     #include "bison.tab.h"
+    #include "table.h"
     #include<stdio.h>
     #include<string.h>
-    struct symrec
-    {
-        char* name;
-        int addr;
-        // int flag ;
-        struct symrec * next;
-    };
-    struct symrec *putsym (char*,char*);
-    struct symrec *getsym (char*);
-    char* getname(char* x);
-    struct symrec * sym_table = NULL;
-    int Adr = 100;
+    
 %}
 
 NUM          [0-9]+
@@ -67,37 +57,6 @@ char* getname( char* x)
     a[j] ='\0';
     return a;
 
-}
-
-struct symrec * putsym(char* name, char* typ)
-{
-    struct symrec *ptr;
-    ptr = malloc(sizeof(struct symrec));
-
-    ptr->next = sym_table;
-    sym_table = ptr;
-
-    ptr->name = malloc(sizeof(char)*(strlen(name)+1));
-    strcpy(ptr->name,name);
-    // if(strcmp(typ,"FUNC")==0)
-    // {
-    //     ptr->flag = 1;
-    //     return ptr;
-    // }
-    ptr->addr = Adr;
-    Adr += 4;
-    return ptr;
-}
-
-struct symrec * getsym(char* name)
-{
-    struct symrec *temp = sym_table;
-    while(temp!=NULL)
-    {  
-        if(strcmp(temp->name,name)==0)return temp;
-        temp = temp->next;
-    }
-    return 0;
 }
 
 

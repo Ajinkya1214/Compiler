@@ -7,6 +7,8 @@
     {
         char* name;
         int addr;
+        int flag;
+        int inside;
         struct symrec * next;
     };
 
@@ -16,11 +18,14 @@
     char* build_for(char* a, char*b, char* c);
     char * init_func(struct symrec* ptr, struct symrec* var);
     char * build_func(char* code);
-
+    char * build_entire(char* funcs, char* main);
+    void addsym(struct symrec * var);
+    void swipetable();
 
     int label = 0 ;
     int count = 0 ;
-    int offset = 8;
+    int offset = 0;
+    struct symrec * symtable = NULL;
 
     
 %}
@@ -62,7 +67,7 @@
 
 %%
 
-prog : funcs MAIN '{' stmts '}' n {printf("%s",$1);}
+prog : funcs MAIN '{' {offset =0;} stmts '}' n {char* final = build_entire($1,$5);printf("%s",final);}
 | '\n' prog
 | '\n'
 ;
@@ -73,27 +78,27 @@ funcs : func funcs {$$ = malloc(sizeof(char)*(strlen($1)+strlen($2))); strcat($$
 | '\n' funcs {$$=malloc(sizeof(char)*(strlen($2)+100));strcpy($$,"\n");strcat($$,$2);}
 | '\n' {$$=malloc(sizeof(char)*10);strcat($$,"\n");}
 ;
-func : y FUNC '(' VAR ')' {char* temp = init_func($2,$4);$1=temp;} '{' stmts '}' '\n'{ $$ = $1;strcat($$,build_func($8));}
+func : y FUNC '(' VAR ')' {addsym($4); char* temp = init_func($2,$4);$1=temp;} '{' stmts '}' '\n'{ $$ = $1;strcat($$,build_func($8)); swipetable(symtable);}
 ;
 y : 
 ;
 stmts : stmt stmts {$$= malloc(sizeof(char)*(strlen($1)+strlen($2)+1));strcpy($$,$1);strcat($$,$2);free($1);free($2);}
 | stmt {$$ = malloc(sizeof(char)*(strlen($1)+1));strcpy($$,$1);free($1);}
 ;
-
 stmt : '\n' {$$ = malloc(sizeof(char)*2);strcpy($$,"\n");}
 | WHILE '(' x '<' x ')' '{' stmts '}' '\n' {$$=build_while($3,$5,$8);}
 | FOR '(' INT VAR '=' x ';' VAR '<' x  ';' VAR '+' '+' ')' '{' stmts '}' '\n' {assert($4->addr==$8->addr);assert($8->addr==$12->addr);$$=build_for($6,$10,$17);}
-| VAR '=' expr '\n' {$$=malloc(sizeof(char)*(1000));sprintf($$,"%s       sw $t0 %d($sp)\n",$3,$1->addr);}
+| VAR '=' expr '\n' {addsym($1);if($1->flag==0){$1->addr=offset;$1->flag=1;offset+=4;}$$=malloc(sizeof(char)*(1000));sprintf($$,"%s       sw $t0 %d($sp)\n",$3,$1->addr);}
 ;
 expr : x   {sprintf($$,"        %s\n",$1);}
-| x '+' x  {sprintf($$,"        %s\n %s\n       add $t0 $t0 $t1\n",$1,$3);}
-| x '*' x  {sprintf($$,"        %s\n %s\n       mul $t0 $t0 $t1\n",$1,$3);}
-| x '/' x  {sprintf($$,"        %s\n %s\n       div $t0 $t0 $t1\n",$1,$3);}
-| x '-' x  {sprintf($$,"        %s\n %s\n       sub $t0 $t0 $t1\n",$1,$3);}
+| x '+' x  {sprintf($$,"        %s\n%s\n       add $t0 $t0 $t1\n",$1,$3);}
+| x '*' x  {sprintf($$,"        %s\n%s\n       mul $t0 $t0 $t1\n",$1,$3);}
+| x '/' x  {sprintf($$,"        %s\n%s\n       div $t0 $t0 $t1\n",$1,$3);}
+| x '-' x  {sprintf($$,"        %s\n%s\n       sub $t0 $t0 $t1\n",$1,$3);}
+| VAR '(' x ')' {sprintf($$,"       %s\n       jal %s\n",$3,$1->name);}
 ;
-x : VAR {if($1->addr!=4){$1->addr=8;offset+=4;} sprintf($$,"lw $t%d, %d($sp)",count,$1->addr);count++,count=count%2;}
-| NUM {sprintf($$,"      li $t%d, %d",count,$1);count++;count=count%2;}
+x : VAR {addsym($1);if($1->flag == 0){$1->addr=offset;offset+=4;}sprintf($$,"lw $t%d, %d($sp)",count,$1->addr);count++,count=count%2;}
+| NUM {sprintf($$,"       li $t%d, %d",count,$1);count++;count=count%2;}
 ;
 
 %%
@@ -142,10 +147,10 @@ char* build_for(char* a1,char* a2,char* stmts)
 char * init_func(struct symrec* ptr, struct symrec* var)
 {
     char* $$ = malloc(sizeof(char)*1000); 
-    printf("%s",ptr->name);
-    sprintf($$,".global %s\n%s:\n       lw $t0, %d($sp)\n       sub $sp, $sp, 12\n       sw $ra, 0($sp)\n       sw $t0, 4($sp)",ptr->name,ptr->name,var->addr);
-    var->addr=4;
-    offset=8;
+    var->addr = 4;
+    var->flag = 1;
+    offset =  8;
+    sprintf($$,".global %s\n%s:\n       sub $sp, $sp, 12\n       sw $ra, 0($sp)\n       sw $t0, 4($sp)",ptr->name,ptr->name);
     return $$;
 }
 
@@ -155,4 +160,32 @@ char * build_func(char* code)
     strcat($$,code);
     strcat($$,"       restore:\n       lw $ra ,0($sp)\n       add $sp, $sp, 12\n       jr $ra");
     return $$;
+}
+
+char * build_entire(char* funcs, char* main)
+{
+    char* temp = malloc(sizeof(char)*(strlen(funcs)+strlen(main)+100));
+    sprintf(temp,".global main\nmain :\n    %s\n\n%s",main,funcs);
+    return temp;
+}
+
+void addsym(struct symrec * var)
+{
+    if(var->inside == 0)
+    {
+        var->inside = 1;
+        var->flag = 0;
+        var->next = symtable;
+        symtable = var;
+    }
+}
+
+void swipetable()
+{
+    struct symrec * temp = symtable;
+    while(temp!= NULL)
+    {
+        temp->flag = 0;
+        temp=temp->next;
+    }
 }

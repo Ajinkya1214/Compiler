@@ -14,8 +14,8 @@
 
     int yylex(void);
     void yyerror(char*);
-    char* build_while(char* a,char* b,char* c);
-    char* build_for(char* a, char*b, char* c);
+    char* build_while(struct symrec* ptr,char* b,char* c);
+    char* build_for(struct symrec* ptr,char* a, char*b, char* c);
     char * init_func(struct symrec* ptr, struct symrec* var);
     char * build_func(char* code);
     char * build_entire(char* funcs, char* main);
@@ -51,6 +51,7 @@
 %token <id> INT
 %token <ptr> FUNC
 %token <id> MAIN
+%token PRINT
 %type    prog
 %type <base> stmts
 %type <base> stmt
@@ -86,16 +87,17 @@ stmts : stmt stmts {$$= malloc(sizeof(char)*(strlen($1)+strlen($2)+1));strcpy($$
 | stmt {$$ = malloc(sizeof(char)*(strlen($1)+1));strcpy($$,$1);free($1);}
 ;
 stmt : '\n' {$$ = malloc(sizeof(char)*2);strcpy($$,"\n");}
-| WHILE '(' x '<' x ')' '{' stmts '}' '\n' {$$=build_while($3,$5,$8);}
-| FOR '(' INT VAR '=' x ';' VAR '<' x  ';' VAR '+' '+' ')' '{' stmts '}' '\n' {assert(strcmp($4->name,$8->name)==0);assert(strcmp($8->name,$12->name)==0);$$=build_for($6,$10,$17);}
-| VAR '=' expr '\n' {addsym($1);if($1->flag==0){$1->addr=offset;$1->flag=1;offset+=4;}$$=malloc(sizeof(char)*(1000));sprintf($$,"%ssw $t0 %d($sp)\n",$3,$1->addr);}
+| WHILE '(' VAR '<' x ')' '{' stmts '}' '\n' {addsym($3);if($3->flag==0){$3->addr=offset;$3->flag=1;offset+=4;}$$=build_while($3,$5,$8);}
+| FOR '(' INT VAR '=' x ';' VAR '<' x  ';' VAR '+' '+' ')' '{' stmts '}' '\n' {addsym($4);if($4->flag==0){$4->addr=offset;$4->flag=1;offset+=4;}assert(strcmp($4->name,$8->name)==0);assert(strcmp($8->name,$12->name)==0);$$=build_for($4,$6,$10,$17);}
+| VAR '=' expr '\n' {addsym($1);if($1->flag==0){$1->addr=offset;$1->flag=1;offset+=4;}$$=malloc(sizeof(char)*(1000));sprintf($$,"%ssw $t0 %d($sp)\n",$3,$1->addr);} 
+| PRINT '(' VAR ')' {addsym($3);if($3->flag == 0){$3->addr=offset;offset+=4;$3->flag=1;};$$ = malloc(sizeof(char)*100); sprintf($$,"lw $t0 , %d($sp)\nli $v0 , 1\nmove $a0 , $t0\nsyscall",$3->addr);}
 ;
-expr : x   {sprintf($$,"%s\n",$1);count=0;}
+expr :  x  {count=0;}   {sprintf($$,"%s\n",$1);}
 | x '+' x  {sprintf($$,"%s\n%s\nadd $t0 $t0 $t1\n",$1,$3);}
 | x '*' x  {sprintf($$,"%s\n%s\nmul $t0 $t0 $t1\n",$1,$3);}
 | x '/' x  {sprintf($$,"%s\n%s\ndiv $t0 $t0 $t1\n",$1,$3);}
 | x '-' x  {sprintf($$,"%s\n%s\nsub $t0 $t0 $t1\n",$1,$3);}
-| VAR '(' x ')' {sprintf($$,"%s\njal %s\n",$3,$1->name);}
+| VAR '(' {count=0;} x {count=0;} ')' {sprintf($$,"%s\njal %s\n",$4,$1->name);}
 ;
 x : VAR {addsym($1);if($1->flag == 0){$1->addr=offset;offset+=4;$1->flag=1;}sprintf($$,"lw $t%d, %d($sp)",count,$1->addr);count++,count=count%2;}
 | NUM {sprintf($$,"li $t%d, %d",count,$1);count++;count=count%2;}
@@ -119,21 +121,21 @@ void yyerror(char * s)
     printf("%s\n",s);
 }
 
-char* build_while(char* x1,char* x2, char* stmts)
+char* build_while(struct symrec* ptr,char* x2, char* stmts)
 {
     char* $$=malloc(sizeof(char)*(1000));
-    sprintf($$,"\nLabel%d : \n%s\n%s\nble $t0 $t1 Next%d %sj Label%d\n\nNext%d :",label,x1,x2,label,stmts,label,label);
+    sprintf($$,"\nLabel%d : \nlw $t3 %d($sp)\n%s\nbge $t3 $t0 Next%d %sj Label%d\n\nNext%d :",label,ptr->addr,x2,label,stmts,label,label);
     label+=1;
     free(stmts); //release the memory blocked by stmts inside loop
     return $$;
 }
 
-char* build_for(char* a1,char* a2,char* stmts)
+char* build_for(struct symrec * ptr,char* a1,char* a2,char* stmts)
 {
     char* $$1 = malloc(sizeof(char)*100);
-    char* $$2 = malloc(sizeof(char)*(strlen(stmts)+100));
-    sprintf($$1,"%s\n",a1);
-    sprintf($$2,"\nLabel%d :\n%s\nbeq $t0 $t1 Next%d %sadd $t0 $t0 1\nj Label%d\n\nNext%d :",label,a2,label,stmts,label,label);
+    char* $$2 = malloc(sizeof(char)*(strlen(stmts)+200));
+    sprintf($$1,"%s\nmove $t3 $t0\nsw $t3 %d($sp)",a1,ptr->addr);
+    sprintf($$2,"\nLabel%d :\nlw $t3 %d($sp)\n%s\nbeq $t3 $t1 Next%d %slw $t3 %d($sp)\nadd $t3 $t3 1\nsw $t3 %d($sp)\nj Label%d\n\nNext%d :",label,ptr->addr,a2,label,stmts,ptr->addr,ptr->addr,label,label);
     char* $$ = malloc(sizeof(char)*(strlen(stmts)+200));
     strcat($$,$$1);
     strcat($$,$$2);
@@ -150,7 +152,7 @@ char * init_func(struct symrec* ptr, struct symrec* var)
     var->addr = 4;
     var->flag = 1;
     offset =  8;
-    sprintf($$,".global %s\n%s:\nsub $sp, $sp, 12\nsw $ra, 0($sp)\nsw $t0, 4($sp)",ptr->name,ptr->name);
+    sprintf($$,"%s:\nsub $sp, $sp, 12\nsw $ra, 0($sp)\nsw $t0, 4($sp)",ptr->name);
     return $$;
 }
 
@@ -158,14 +160,15 @@ char * build_func(char* code)
 {
     char * $$ = malloc(sizeof(char)*(strlen(code)+200));
     strcat($$,code);
-    strcat($$,"restore:\n       lw $ra ,0($sp)\n       add $sp, $sp, 12\n       jr $ra");
+    strcat($$,"j restore\n");
     return $$;
 }
 
 char * build_entire(char* funcs, char* main)
 {
-    char* temp = malloc(sizeof(char)*(strlen(funcs)+strlen(main)+100));
-    sprintf(temp,".global main\nmain :\n    %s\n\n%s",main,funcs);
+    char* temp = malloc(sizeof(char)*(strlen(funcs)+strlen(main)+500));
+    sprintf(temp,".data\n.text\n\nmain :\n    %sli $v0 , 10\nsyscall\n\n%s",main,funcs);
+    strcat(temp,"restore:\n       lw $ra ,0($sp)\n       add $sp, $sp, 12\n       jr $ra\n");
     return temp;
 }
 

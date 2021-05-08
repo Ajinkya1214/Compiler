@@ -13,4 +13,4 @@ run:
 	./a.out <strln.prog
 
 clean:
-	rm a.out lex.yy.c bison.tab.c
+	rm a.out bison.output bison.tab.c bison.tab.h lex.yy.c output.txt

@@ -1,5 +1,5 @@
 %{
-    #include "bison2.tab.h"
+    #include "bison.tab.h"
     #include "table.h"
     #include<stdio.h>
     #include<string.h>

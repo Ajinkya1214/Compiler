@@ -1,3 +1,4 @@
+  
 How to compile ?
   bison -d bison.y
   flex flex.l
@@ -5,3 +6,6 @@ How to compile ?
   
 How to run ?
   ./a.out <strln.prog
+
+Using makefile 
+- Run `make`

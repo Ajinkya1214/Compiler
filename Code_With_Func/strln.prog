@@ -1,0 +1,29 @@
+def func(a){
+    c = a
+    a = a + 1
+}
+
+def func2(c){
+    a = c
+    a = a + 1
+}
+
+def main(){
+    a = 1
+    b = a
+    c = b
+    a = a + 1
+    a = func(a)
+    c = func2(c)
+}
+
+
+
+
+
+
+
+
+
+
+

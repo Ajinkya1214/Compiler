@@ -1,0 +1,16 @@
+def main(){
+    a = input()
+    b = input()
+    c = input()
+    max = 0
+    if(a<b){
+        max = b
+    }
+    else{
+        max = a
+    }
+    if(max<c){
+        max=c
+    }
+    print(max)
+}

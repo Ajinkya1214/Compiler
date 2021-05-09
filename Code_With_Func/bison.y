@@ -169,7 +169,7 @@ char * build_func(char* code)
 char * build_entire(char* funcs, char* main)
 {
     char* temp = malloc(sizeof(char)*(strlen(funcs)+strlen(main)+700));
-    sprintf(temp,".data\n\ttheNumber: .word 0\n.text\n\nmain :\n    %sli $v0 , 10\nsyscall\n\n%s",main,funcs);
+    sprintf(temp,".data\n.text\n\nmain :\n    %sli $v0 , 10\nsyscall\n\n%s",main,funcs);
     strcat(temp,"restore:\n       lw $ra ,0($sp)\n       add $sp, $sp, 12\n       jr $ra\n");
     return temp;
 }

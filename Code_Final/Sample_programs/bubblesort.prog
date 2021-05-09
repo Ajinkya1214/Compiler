@@ -1,0 +1,33 @@
+def main(){   
+    startdecl 
+        decl a[5]
+    enddecl
+
+    n=5
+    for(int i=0;i<n;i++){
+        a[i]=input()
+    }
+
+    p = n-1
+    for (int i = 0; i < p; i++){
+        q = n-i
+        q = q-1
+        for (int j = 0; j < q; j++){
+            c = a[j]
+            k = j+1
+            d = a[k]
+            if (d < c){
+                a[j] = d
+                a[k] = c   
+            }
+        }
+    }
+
+    for(int i=0;i<n;i++){
+        x = a[i]
+        print(x)
+    }
+
+
+
+}

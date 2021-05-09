@@ -10,7 +10,7 @@ build:
 	gcc bison.tab.c lex.yy.c -o $(BUILD) -lfl
 
 compile:
-	./$(BUILD) <strln.prog > main.asm
+	./$(BUILD) <strln_with_input.prog > main.asm
 
 run:
 	$(CC) -jar Mars4_5.jar main.asm

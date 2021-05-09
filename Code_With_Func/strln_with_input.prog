@@ -9,7 +9,7 @@ def func2(c){
 }
 
 def main(){
-    input
+    x = input()
     a = 1
     b = a
     c = b

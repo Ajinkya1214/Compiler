@@ -14,6 +14,7 @@ FUNC         "def "{VAR}
 %%
 
 [ ]             {}  
+"input"         {return INPUT;}
 "while"         {return WHILE;}
 "for"           {return FOR;}
 "int"           {return INT;}   

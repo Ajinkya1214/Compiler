@@ -52,7 +52,8 @@
 %token <ptr> FUNC
 %token <id> MAIN
 %token PRINT
-%type    prog
+%token INPUT
+// %type    prog
 %type <base> stmts
 %type <base> stmt
 %type <code> expr
@@ -91,6 +92,7 @@ stmt : '\n' {$$ = malloc(sizeof(char)*2);strcpy($$,"\n");}
 | FOR '(' INT VAR '=' x ';' VAR '<' x  ';' VAR '+' '+' ')' '{' stmts '}' '\n' {addsym($4);if($4->flag==0){$4->addr=offset;$4->flag=1;offset+=4;}assert(strcmp($4->name,$8->name)==0);assert(strcmp($8->name,$12->name)==0);$$=build_for($4,$6,$10,$17);}
 | VAR '=' expr '\n' {addsym($1);if($1->flag==0){$1->addr=offset;$1->flag=1;offset+=4;}$$=malloc(sizeof(char)*(1000));sprintf($$,"%ssw $t0 %d($sp)\n",$3,$1->addr);} 
 | PRINT '(' VAR ')' {addsym($3);if($3->flag == 0){$3->addr=offset;offset+=4;$3->flag=1;};$$ = malloc(sizeof(char)*100); sprintf($$,"lw $t0 , %d($sp)\nli $v0 , 1\nmove $a0 , $t0\nsyscall",$3->addr);}
+| INPUT {$$ = malloc(sizeof(char)*100); sprintf($$,"li $v0 , 5\nsyscall\nsw $v0, theNumber");}
 ;
 expr :  x  {count=0;}   {sprintf($$,"%s\n",$1);}
 | x '+' x  {sprintf($$,"%s\n%s\nadd $t0 $t0 $t1\n",$1,$3);}
@@ -166,8 +168,8 @@ char * build_func(char* code)
 
 char * build_entire(char* funcs, char* main)
 {
-    char* temp = malloc(sizeof(char)*(strlen(funcs)+strlen(main)+500));
-    sprintf(temp,".data\n.text\n\nmain :\n    %sli $v0 , 10\nsyscall\n\n%s",main,funcs);
+    char* temp = malloc(sizeof(char)*(strlen(funcs)+strlen(main)+700));
+    sprintf(temp,".data\n\ttheNumber: .word 0\n.text\n\nmain :\n    %sli $v0 , 10\nsyscall\n\n%s",main,funcs);
     strcat(temp,"restore:\n       lw $ra ,0($sp)\n       add $sp, $sp, 12\n       jr $ra\n");
     return temp;
 }

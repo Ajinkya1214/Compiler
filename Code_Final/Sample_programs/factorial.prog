@@ -1,0 +1,17 @@
+def factorial(n){
+    if(n<2){
+        a=n
+        return
+    }
+    a = n-1
+    b = factorial(a)
+    n = n*b
+}
+def main(){
+    a = 5
+    a = factorial(a)
+    print(a)
+}
+
+  
+   

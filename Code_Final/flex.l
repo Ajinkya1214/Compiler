@@ -57,6 +57,7 @@ FUNC         "def "{VAR}
 //     return 0;
 // }
 
+//when a FUNC is matched, the function name is stored in the symbol table, getname, gets that particular string from yytext
 char* getname( char* x)
 {
     char* a = malloc(sizeof(char)*20);

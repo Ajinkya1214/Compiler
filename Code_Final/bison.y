@@ -25,13 +25,28 @@
     void addsym(struct symrec * var);
     void swipetable();
 
+    /* this value will be used to create new labels whenever a for/while loop is seen*/
     int label = 0 ;
+
+
     int count = 0 ;
+
     int offset = 0;
+
+    /* We will be creating a new global symbol table as the parsing happens. Everytime a new VAR is seen, certain operations are performed on it 
+    This mechanism will essentially make sure that each function knows where to store its local variables and where to access them from.*/
+
     struct symrec * symtable = NULL;
-    int sp_size = 0;
+
+    /* this value will be used to create new labels whenever an if statement is seen */
+
     int iflabel = 0;
+
+    /* all the jump labels of conditionals will be appended to this lastpart and printed in the last */
+
     char* lastpart;
+
+    /* some helper variables */
     char* t0;
     char* t1;
     
@@ -140,12 +155,6 @@ int main()
     #endif  
     lastpart = malloc(sizeof(char)*5);strcpy(lastpart," \n");
     yyparse();
-    struct symrec* head = symtable;
-    while(head!=NULL)
-    {
-        printf("%s\n",head->name);
-        head=head->next;
-    }
 }
 
 void yyerror(char * s)
@@ -153,6 +162,8 @@ void yyerror(char * s)
     printf("%s\n",s);
 }
 
+
+/*generates the code for while loop*/
 char* build_while(struct symrec* ptr,char* x2, char* stmts)
 {
     char* $$=malloc(sizeof(char)*(1000));
@@ -162,6 +173,7 @@ char* build_while(struct symrec* ptr,char* x2, char* stmts)
     return $$;
 }
 
+/*generates the code for for loop*/
 char* build_for(struct symrec * ptr,char* a1,char* a2,char* stmts)
 {
     char* $$1 = malloc(sizeof(char)*100);
@@ -178,6 +190,7 @@ char* build_for(struct symrec * ptr,char* a1,char* a2,char* stmts)
     return $$;
 }
 
+/*generates the code for if statement*/
 char* build_if(struct symrec * ptr, char * x, char* stmts)
 {
     char* $$ = malloc(sizeof(char)*100);
@@ -201,7 +214,7 @@ char* build_if(struct symrec * ptr, char * x, char* stmts)
     return $$;
 }
 
-
+/* when a function definition is encountered while parsing, this function will decrement the stack pointer and store the return address parameter in the stack*/
 char * init_func(struct symrec* ptr, struct symrec* var)
 {
     char* $$ = malloc(sizeof(char)*1000); 
@@ -209,6 +222,7 @@ char * init_func(struct symrec* ptr, struct symrec* var)
     return $$;
 }
 
+/* this function will generate the code inside the function */
 char * build_func(char* code)
 {
     char * $$ = malloc(sizeof(char)*(strlen(code)+200));
@@ -217,6 +231,7 @@ char * build_func(char* code)
     return $$;
 }
 
+/* this function merges the code for various functions and the main function into one code */
 char * build_entire(char* funcs, char* main)
 {
     char* temp = malloc(sizeof(char)*(strlen(funcs)+strlen(main)+strlen(lastpart)+200));
@@ -227,6 +242,7 @@ char * build_entire(char* funcs, char* main)
     return temp;
 }
 
+/* this function will change the value at particular location of array*/
 char * update_arr(struct symrec * arr, char* x, char* y)
 {
     char* $$ = malloc(sizeof(char)*(strlen(x)+strlen(y)+200));
@@ -234,7 +250,8 @@ char * update_arr(struct symrec * arr, char* x, char* y)
     return $$;
 }
 
-
+/* whenever a symbol s is encountered while the parser was in some function f , if s.insde ==0, then the symbol is new, so it will be added to the symbol table
+also its address will be updated to s.addr=offset and s.flag=1. So now while in f, if s is seen again, it can be fetched from a.addr, which is where s has been stored in stack of f*/
 void addsym(struct symrec * var)
 {
     if(var->inside == 0)
@@ -253,6 +270,8 @@ void addsym(struct symrec * var)
     }
 }
 
+/* everytime a new function defintion is seen, for all the variables present in the symboltable, their flag will be set to 0. So that when they are seen in the new function,
+their addr will be updated to the correct offset wrt to the stack of this function*/
 void swipetable()
 {
     struct symrec * temp = symtable;

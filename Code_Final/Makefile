@@ -5,12 +5,12 @@ all: build compile run
 
 build:
 	mkdir -p .build
-	flex flex.l
 	bison -d bison.y
+	flex flex.l
 	gcc bison.tab.c lex.yy.c -o $(BUILD) -lfl
 
 compile:
-	./$(BUILD) <strln_with_input.prog > main.asm
+	./$(BUILD) <factorial.prog > main.asm
 
 run:
 	$(CC) -jar Mars4_5.jar main.asm

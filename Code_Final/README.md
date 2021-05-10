@@ -103,6 +103,14 @@
         a[j] = d
         b[i] = a[j]
         
+## 4. Team and resources
+     
+      * Ajinkya Pawar - 18110013
+      * Pranshu Kumar Gond - 18110124
+      * Sagar Bisen - 18110149
+      * Shruti Katpara - 
+      * Anupam Kumar -18110022
+   * No repo or website was referred to :)
  
      
       

@@ -10,6 +10,7 @@ struct symrec
 struct symrec *putsym (char*,char*);
 struct symrec *getsym (char*);
 char* getname(char* x);
+/*thi table will be generated during lexical analysis , but not of use to us.*/
 struct symrec * sym_table = NULL;
 int Adr = 0;
 
